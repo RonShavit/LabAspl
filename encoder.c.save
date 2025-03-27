@@ -1,0 +1,29 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+bool debugFlag = true;
+
+int main(int argc, char* argv[])
+{
+	for (int i=1;i<argc;i++)
+	{
+		if(*argv[i)// check if thee is a "-d" flag to turn debug off
+		{
+			debugFlag=false;
+		}
+
+		if(strcmp(argv[i],"+d")==0)// check if thee is a "+d" flag to turn debug on
+		{
+			debugFlag=true;
+		}
+	}
+
+	for (int i=1;i<argc;i++)
+	{
+		if(debugFlag==true)
+		{
+			fprintf(stderr,"%s\n",argv[i]);
+		}
+	}
+	return 0;
+}
