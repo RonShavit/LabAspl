@@ -2,9 +2,12 @@
 #include <string.h>
 
 short debugFlag = 1; //sould debug be active
-int encryptionKey = 0; //Encryption key for the encode function
+char* encryptionKey = "0"; //Encryption key for the encode function
+int negative = 1;
+int encIndex = 0;
 FILE* input = 0; //set to stdin on defualt in main
 FILE* output = 0; //set to stdout on defualt in main
+short fileErr = 0; //was there an error openning a file stream
 
 //Returns 1 if s1==s2 in content, 0 otherwise
 int isStrEqual(char* s1, char* s2)
@@ -45,7 +48,9 @@ void setFile(char* fileName, char inOut)
 		input = fopen(fileName,"r+");
 		if(input==0)
 		{
-			//close
+			fileErr = 1;
+			fprintf(stderr,"Debug : error opening input file stream");
+			fclose(output);
 		}
 	}
 	else if(inOut == 'o')
@@ -53,47 +58,44 @@ void setFile(char* fileName, char inOut)
 		output = fopen(fileName,"a+");
 		if(output==0)
 		{
-			//close
+			fileErr = 1;
+			fprintf(stderr,"Debug : error opening output file stream");
+			fclose(input);
 		}
 	}
 	return;
 }
 
-
-void checkEncryptionKey(char* c,int negative)
-{
-	char* iter = c+2;
-	encryptionKey+= (*iter)-'0';
-	iter+=1;
-	while(*iter!='\0')
-	{
-		encryptionKey*=10;
-		encryptionKey+=(*iter)-'0';
-		iter+=1;
-	}
-	encryptionKey *= negative;
-
-	return;
-}
 
 
 
 char getOffset(char start, char end,char c)
 {
-	int offset;
-	if(encryptionKey>=0)
+	char offset;
+	int localKey = negative*(encryptionKey[encIndex]-'0');
+	offset = c+localKey;
+	while(offset>end)
 	{
-		offset = ((c-start)+encryptionKey)%(end-start+1);
+		offset -= end-start+1;
+	}
+	while(offset<start)
+	{
+		offset += end-start+1;
+	}
+	return offset;
+}
+
+void advanceIndex()
+{
+	if(encryptionKey[encIndex+1]=='\0')
+	{
+		encIndex=0;
 	}
 	else
 	{
-		offset = ((c-start)+encryptionKey);
-		while(offset<0)
-		{
-			offset+=(end-start+1);
-		}
+		encIndex+=1;
 	}
-	return start+offset; 
+	return;
 }
 
 
@@ -132,17 +134,18 @@ int main(int argc, char* argv[])
 		}
 		else if (compareHeaders(argv[i],"-e")==1)
 		{
-			checkEncryptionKey(argv[i],-1);
+			encryptionKey=argv[i]+2;
+			negative =-1;
 		}
 		else if (compareHeaders(argv[i],"+e")==1)
 		{
-			checkEncryptionKey(argv[i],1);
+			encryptionKey=argv[i]+2;
 		}
-		else if (compareHeaders(argv[i],"-i"))
+		else if (compareHeaders(argv[i],"-i")&&fileErr==0)
 		{
 			setFile(argv[i]+2,'i');
 		}
-		else if (compareHeaders(argv[i],"-o"))
+		else if (compareHeaders(argv[i],"-o")&&fileErr==0)
 		{
 			setFile(argv[i]+2,'o');
 		}
@@ -155,23 +158,31 @@ int main(int argc, char* argv[])
 			fprintf(stderr,"%s\n",argv[i]);
 		}
 	}
-	currChar = fgetc(input);
-	while(eof==0)
+	if (fileErr==0)
 	{
+
+		eof = feof(input);
+		while(eof==0)
+		{
+			currChar = fgetc(input);
+			eof=feof(input);
+			if(eof==0)
+			{
+				if (debugFlag==1)
+				{
+					fprintf(stderr,"\nDEBUG : adding %c\n",currChar);
+				}
+				fputc(encode(currChar),output);
+				advanceIndex();
+			}
+		}
 		if (debugFlag==1)
 		{
-			fprintf(stderr,"\nDEBUG : adding %c\n",currChar);
+			fprintf(stderr,"\nDEBUG : End Of File:)\n");
 		}
-		fputc(encode(currChar),output);
-		currChar = fgetc(input);
-		eof =feof(input);
+		fclose(input);
+		fclose(output);
+		return 0;
 	}
-	if (debugFlag==1)
-	{
-		fprintf(stderr,"\nDEBUG : End Of File:)\n");
-	}
-	fclose(input);
-	fclose(output);
-	return 0;
 }
 
