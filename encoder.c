@@ -123,6 +123,11 @@ int main(int argc, char* argv[])
 	char currChar = ' ';
 	for (int i=1;i<argc;i++)
 	{
+		if (debugFlag==1)
+		{
+			fprintf(stderr,"%s\n",argv[i]);
+		}
+			
 		if(isStrEqual(argv[i],"-d")==1)// check if thee is a "-d" flag to turn debug off
 		{
 			debugFlag=0;
@@ -151,13 +156,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	for (int i=1;i<argc;i++)
-	{
-		if(debugFlag==1)
-		{
-			fprintf(stderr,"%s\n",argv[i]);
-		}
-	}
+	
 	if (fileErr==0)
 	{
 
